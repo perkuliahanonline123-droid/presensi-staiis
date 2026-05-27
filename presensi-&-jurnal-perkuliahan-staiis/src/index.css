@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: "Tajawal", sans-serif;
+}
+
+/* Optional high-fidelity smooth focus and animations */
+.rtl-flip {
+  transform: scaleX(-1);
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+[dir="rtl"] body, [dir="rtl"] {
+  font-family: var(--font-arabic), var(--font-sans);
+}
