@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import './index.css' // <-- TAMBAHKAN BARIS INI (atau './src/index.css' sesuaikan dengan letak file CSS Anda)
 
 const rootElement = document.getElementById('root')
 
