@@ -10,7 +10,7 @@ import { ApiClient } from './db';
 import { SettingsPanel } from './components/SettingsPanel';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
-
+ 
 // Pages
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
