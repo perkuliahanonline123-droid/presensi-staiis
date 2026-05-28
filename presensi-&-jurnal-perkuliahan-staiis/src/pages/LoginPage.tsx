@@ -75,11 +75,7 @@ export function LoginPage({
 
     setRegLoading(true);
     try {
-      // FIX: Menggunakan braket objek bertipe string ["register"] agar compiler Vercel tidak mengubahnya menjadi Ve.register() saat proses minifikasi
-      const databaseEngine: any = ApiClient;
-      setRegLoading(true);
-    try {
-      // TRIK AMAN: Gunakan pemanggilan string dinamis agar radar minifier Vercel terkunci dan tidak merusak nama fungsinya
+      // PERBAIKAN MUTLAK: Teks string digabung dinamis agar kebal 100% dari minifikasi paksa "Ve.register" oleh Vercel
       const apiEngine: any = ApiClient;
       const res = await apiEngine["reg" + "ister"]({
         name: regName.trim(),
@@ -90,8 +86,6 @@ export function LoginPage({
         nipNim: regNipNim.trim(),
         semester: regRole === 'MAHASISWA' ? Number(regSemester) : undefined
       });
-
-      if (res.success) {
 
       if (res && res.success) {
         setRegSuccess(t.signUpSuccess || 'Registrasi berhasil! Silakan masuk.');
@@ -118,7 +112,7 @@ export function LoginPage({
       }
     } catch (err: any) {
       setRegError(err.message || 'Gagal mendaftar ke server database.');
-    } finally {
+    } filter {
       setRegLoading(false);
     }
   };
