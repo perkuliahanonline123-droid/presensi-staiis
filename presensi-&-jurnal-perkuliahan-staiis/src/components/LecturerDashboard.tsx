@@ -420,7 +420,7 @@ export function LecturerDashboard({
         </div>
         <div className="flex items-center gap-4 z-10">
           <div className="bg-emerald-850 border border-emerald-700/50 px-4.5 py-3 rounded-2xl flex flex-col items-center">
-            <Users className="w-5 h-5 text-amber-400" />
+            <UserCheck className="w-5 h-5" />
             <span className="text-[10px] opacity-75 mt-0.5">Total Mahasiswa</span>
             <span className="font-extrabold text-lg text-amber-300">{totalStudentsEnrolled} Orang</span>
           </div>
