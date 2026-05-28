@@ -7,7 +7,7 @@ import React from 'react';
 import { User, AttendanceSession, Attendance, Course, Journal } from '../types';
 import { Lang } from '../translations';
 import { ApiClient } from '../db';
-import { GraduationCap, RefreshCw, Settings, LogOut } from 'lucide-react';
+import { GraduationCap, LogOut } from 'lucide-react';
 
 interface NavbarProps {
   user: User | null;
@@ -50,16 +50,6 @@ export function Navbar({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Sync connection network lights */}
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800/80 rounded-md text-[10px] font-bold border border-emerald-700/60">
-            {isSyncing ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin mr-0.5 text-amber-300" />
-            ) : (
-              <span className={`w-1.5 h-1.5 rounded-full ${ApiClient.isLiveMode() ? 'bg-amber-400' : 'bg-amber-400 animate-pulse'}`} />
-            )}
-            {ApiClient.isLiveMode() ? t.liveMode : t.demoMode}
-          </div>
-
           {/* Language Selector Picker */}
           <div className="flex bg-emerald-950/80 p-1 rounded-md border border-emerald-800">
             {(['ID', 'EN', 'AR'] as Lang[]).map(item => (
@@ -76,17 +66,6 @@ export function Navbar({
               </button>
             ))}
           </div>
-
-          {/* Settings Button always available */}
-          <button
-            onClick={onActiveTabToggle}
-            className={`p-2 rounded-lg transition cursor-pointer ${
-              activeTab === 'SETTINGS' ? 'bg-emerald-700 text-white font-bold' : 'text-emerald-200 hover:text-white hover:bg-emerald-850'
-            }`}
-            title={t.gasUrlSetup || 'Pengaturan Endpoint URL'}
-          >
-            <Settings className="w-4 h-4" />
-          </button>
 
           {/* Authenticated Controls */}
           {user && (
