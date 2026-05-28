@@ -286,7 +286,7 @@ function getPropCaseInsensitive(obj: any, keys: string[]): any {
 
 export class ApiClient {
   static getGasUrl(): string {
-    return 'https://script.google.com/macros/s/AKfycbxJPOPwKnrnbVmWz2SbZ7QhdVFYPJjn7TI9MtjDjpfGkYGJ3V_M97tXxEkOkpHVpVLJgg/exec';
+    return localStorage.getItem('siakad_gas_url') || 'https://script.google.com/macros/s/AKfycbyXHwbUiHQB1k0QmYDGIlt4T_WidAvqsGKcVjwJANE_BTSzej9kNl1MMWIxxcH4sk9jPw/exec';
   }
 
   static setGasUrl(url: string): void {
@@ -438,16 +438,40 @@ export class ApiClient {
 
     if (this.isLiveMode()) {
       try {
+        const defaultPassword = targetRole === 'DOSEN' ? 'dosen123' : 'mhs123';
+        const finalPassword = (userData.password || defaultPassword).trim();
         await requestGAS(this.getGasUrl(), 'register', 'POST', {
+          // Both camelCase and Indonesian translated keys for comprehensive fallback compatibility
           id,
+          ID: id,
+          
           name: userData.name,
+          "Nama Lengkap": userData.name,
+          
           email: userData.email.trim().toLowerCase(),
-          password: (userData.password || (targetRole === 'DOSEN' ? 'dosen123' : 'mhs123')).trim(),
+          Email: userData.email.trim().toLowerCase(),
+          
+          password: finalPassword,
+          Password: finalPassword,
+          "Kata Sandi": finalPassword,
+          "Sandi": finalPassword,
+          
           role: userData.role,
+          Role: userData.role,
+          
           programStudi: userData.programStudi,
+          "Program Studi": userData.programStudi,
+          
           semester: userData.semester || '',
+          Semester: userData.semester || '',
+          
           nipNim: userData.nipNim,
-          status: 'AKTIF'
+          "NIP / NIM": userData.nipNim,
+          "NIP": userData.nipNim,
+          "NIM": userData.nipNim,
+          
+          status: 'AKTIF',
+          Status: 'AKTIF'
         });
         return { success: true, user: newUser };
       } catch (err: any) {
