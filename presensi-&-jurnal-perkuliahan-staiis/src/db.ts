@@ -204,6 +204,24 @@ export class ApiClient {
   }
 
   /* ================================
+     REGISTER (FUNGSI BARU YANG DITAMBAHKAN)
+  ================================ */
+  static async register(userData: any): Promise<any> {
+    try {
+      const response = await requestGAS(
+        this.getGasUrl(),
+        'register',
+        'POST',
+        userData
+      );
+      return response;
+    } catch (err: any) {
+      console.error("Gagal melakukan registrasi:", err);
+      return { success: false, error: err.message || "Gagal mendaftar ke server." };
+    }
+  }
+
+  /* ================================
      GET COURSES
   ================================ */
   static async getCourses(): Promise<Course[]> {
@@ -242,7 +260,7 @@ export class ApiClient {
   }
 
   /* ================================
-     UPDATE COURSE (FIXED PARAMETER OPSIONAL AGAR COMPILER VERCEL LOLOS)
+     UPDATE COURSE
   ================================ */
   static async updateCourse(kodeMK: string, course?: any): Promise<any> {
     const payloadCourse = course || {};
