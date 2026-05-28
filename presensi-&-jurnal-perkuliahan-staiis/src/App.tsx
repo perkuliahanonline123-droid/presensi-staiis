@@ -6,25 +6,20 @@
 import React, { useState, useEffect } from 'react';
 import { User, Course, AttendanceSession, Attendance, Journal } from './types';
 import { translations, Lang } from './translations';
+import { ApiClient } from './db';
 import { SettingsPanel } from './components/SettingsPanel';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
  
-// FIX JALUR ALAMAT: Mengarah langsung ke folder komponen asli proyek Anda
-import { LandingPage } from './components/LandingPage';
-import { LoginPage } from './components/LoginPage';
-import { DashboardMahasiswa } from './components/StudentDashboard';
-import { MahasiswaJurnal } from './components/MahasiswaJurnal';
-import { MahasiswaRiwayat } from './components/MahasiswaRiwayat';
-import { LecturerDashboard } from './components/LecturerDashboard';
-import { DosenPresensi } from './components/DosenPresensi';
-import { DosenJurnal } from './components/DosenJurnal';
-import { DosenRekap } from './components/DosenRekap';
-import { AdminManageCourses } from './components/AdminManageCourses';
-
-// FIX MINIFY VERCEL: Membungkus engine API Client agar tidak hancur diringkas menjadi Ve.register
-import * as DatabaseEngine from './db';
-const ApiClient = DatabaseEngine.ApiClient;
+// Pages
+import { LandingPage } from './pages/LandingPage';
+import { LoginPage } from './pages/LoginPage';
+import { DashboardMahasiswa } from './pages/DashboardMahasiswa';
+import { MahasiswaJurnal } from './pages/MahasiswaJurnal';
+import { DashboardDosen } from './pages/DashboardDosen';
+import { DosenPresensi } from './pages/DosenPresensi';
+import { DosenRekap } from './pages/DosenRekap';
+import { AdminManageCourses } from './pages/AdminManageCourses';
 
 export default function App() {
   // Localization States
@@ -95,7 +90,7 @@ export default function App() {
     } catch (err) {
       console.error('Failed syncing system data', err);
     } finally {
-      setIsSyncing(false);
+      if (showLoader) setIsSyncing(false);
     }
   };
 
@@ -109,8 +104,8 @@ export default function App() {
     return () => clearInterval(interval);
   }, [user]);
 
-  // Handle Login submission (Versi Kebal Braket String Objek)
-  const handleLogin = async (e: React.FormEvent) => {
+  // Handle Login submission
+    const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     setIsSyncing(true);
@@ -122,18 +117,26 @@ export default function App() {
     }
 
     try {
-      const loginEngine: any = ApiClient;
-      const res = await loginEngine["login"](emailInput, passwordInput);
-      if (res.success && res.user) {
-        setUser(res.user);
+      const res = await ApiClient.login(emailInput, passwordInput);
+      
+      // PERBAIKAN: Validasi ketat untuk memastikan 'res' tidak undefined sebelum membaca propertinya
+      if (res && res.success && res.data && res.data.user) {
+        setUser(res.data.user);
         setEmailInput('');
         setPasswordInput('');
         setCurrentView('LANDING'); 
+      } else if (res && res.success && res.user) {
+        // Antisipasi jika data user berada di tingkat root objek res
+        setUser(res.user);
+        setEmailInput('');
+        setPasswordInput('');
+        setCurrentView('LANDING');
       } else {
-        setAuthError(res.message || t.loginError);
+        // Jika gagal login atau data tidak cocok
+        setAuthError(res?.message || res?.data?.message || t.loginError || 'Kredensial salah atau tidak cocok!');
       }
     } catch (err: any) {
-      setAuthError(err.message || 'Error autentikasi.');
+      setAuthError(err.message || 'Error autentikasi jaringan.');
     } finally {
       setIsSyncing(false);
     }
@@ -213,7 +216,6 @@ export default function App() {
     setShowCourseForm(true);
   };
 
-  // Map Courses to student logged in enrollments
   const studentCourses = courses.filter(course =>
     enrollments.some(e => e.kodeMK === course.kodeMK && e.idMahasiswa === user?.id)
   );
@@ -245,7 +247,6 @@ export default function App() {
             t={t}
           />
         ) : (
-          /* Main view router switcher asli pembawa kode lengkap */
           (() => {
             if (!user) {
               if (currentView === 'LOGIN') {
@@ -275,4 +276,279 @@ export default function App() {
             if (showCourseForm) {
               return (
                 <div className="bg-white rounded-2xl border border-slate-250 p-6 max-w-2xl mx-auto space-y-6 shadow-sm">
-                  <div className="flex items-center gap-3 border-b
+                  <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowCourseForm(false)}
+                      className="p-2 hover:bg-slate-100 rounded-xl hover:cursor-pointer transition"
+                    >
+                      {/* Native SVG ArrowLeft - Anti Crash Vercel */}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    </button>
+                    <h3 className="font-extrabold text-slate-800 text-lg">
+                      {courseFormMode === 'ADD' ? t.addCourse : t.editCourse}
+                    </h3>
+                  </div>
+
+                  <form onSubmit={handleSaveCourse} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-600">{t.courseCode}</label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: PAI-402"
+                          disabled={courseFormMode === 'EDIT'}
+                          value={courseForm.kodeMK}
+                          onChange={(e) => setCourseForm({ ...courseForm, kodeMK: e.target.value.toUpperCase() })}
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white text-slate-800 font-semibold"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-600">{t.semesterPeriod}</label>
+                        <input
+                          type="text"
+                          placeholder="Ganjil 2025/2026"
+                          value={courseForm.semester}
+                          onChange={(e) => setCourseForm({ ...courseForm, semester: e.target.value })}
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white text-slate-800 font-semibold"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2 space-y-1.5">
+                        <label className="text-xs font-bold text-slate-600">{t.courseName}</label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: Ulumul Qur'an & Metodologi Tafsir"
+                          value={courseForm.namaMK}
+                          onChange={(e) => setCourseForm({ ...courseForm, namaMK: e.target.value })}
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white text-slate-800 font-semibold"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-600">{t.day}</label>
+                        <select
+                          value={courseForm.hari}
+                          onChange={(e) => setCourseForm({ ...courseForm, hari: e.target.value })}
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white text-slate-800 font-semibold"
+                        >
+                          {Object.keys(t.days).map(day => (
+                            <option key={day} value={day}>
+                              {t.days[day]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-600">{t.room}</label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: R.304 / Gedung Tarbiyah"
+                          value={courseForm.ruang}
+                          onChange={(e) => setCourseForm({ ...courseForm, ruang: e.target.value })}
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white text-slate-800 font-semibold"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-600">{t.startTime}</label>
+                        <input
+                          type="time"
+                          value={courseForm.jamMulai}
+                          onChange={(e) => setCourseForm({ ...courseForm, jamMulai: e.target.value })}
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white text-slate-800 font-semibold"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-600">{t.endTime}</label>
+                        <input
+                          type="time"
+                          value={courseForm.jamSelesai}
+                          onChange={(e) => setCourseForm({ ...courseForm, jamSelesai: e.target.value })}
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white text-slate-800 font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setShowCourseForm(false)}
+                        className="hover:cursor-pointer text-xs font-bold px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
+                      >
+                        {t.cancel}
+                      </button>
+                      <button
+                        type="submit"
+                        className="hover:cursor-pointer text-xs font-bold px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md shrink-0 flex items-center gap-2 transition"
+                      >
+                        {/* Native SVG Save Icon - Anti Crash Vercel */}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        Simpan MK
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              );
+            }
+
+            if (currentView === 'LANDING') {
+              return (
+                <LandingPage
+                  onStartLogin={() => setCurrentView('DASHBOARD')}
+                  user={user}
+                  lang={lang}
+                  t={t}
+                />
+              );
+            }
+
+            if (user.role === 'MAHASISWA') {
+              if (currentView === 'MAHASISWA_JURNAL') {
+                return (
+                  <MahasiswaJurnal
+                    user={user}
+                    courses={studentCourses}
+                    journals={journals}
+                    sessions={sessions}
+                    attendances={attendances}
+                    initialCourse={selectedCourse}
+                    onBack={() => setCurrentView('DASHBOARD')}
+                    t={t}
+                    initialTab="JURNAL"
+                  />
+                );
+              }
+
+              if (currentView === 'MAHASISWA_RIWAYAT') {
+                return (
+                  <MahasiswaJurnal
+                    user={user}
+                    courses={studentCourses}
+                    journals={journals}
+                    sessions={sessions}
+                    attendances={attendances}
+                    initialCourse={selectedCourse}
+                    onBack={() => setCurrentView('DASHBOARD')}
+                    t={t}
+                    initialTab="RIWAYAT"
+                  />
+                );
+              }
+
+              return (
+                <DashboardMahasiswa
+                  user={user}
+                  courses={studentCourses}
+                  sessions={sessions}
+                  attendances={attendances}
+                  journals={journals}
+                  onRefresh={() => fetchAllData(false)}
+                  lang={lang}
+                  t={t}
+                  onNavigateToJournal={(c) => {
+                    setSelectedCourse(c);
+                    setCurrentView('MAHASISWA_JURNAL');
+                  }}
+                  onNavigateToHistory={() => {
+                    setCurrentView('MAHASISWA_RIWAYAT');
+                  }}
+                />
+              );
+            }
+
+            if (user.role === 'DOSEN') {
+              if (currentView === 'DOSEN_PRESENSI' && selectedCourse) {
+                return (
+                  <DosenPresensi
+                    user={user}
+                    selectedCourse={selectedCourse}
+                    sessions={sessions}
+                    attendances={attendances}
+                    students={students}
+                    enrollments={enrollments}
+                    journals={journals}
+                    onBack={() => setCurrentView('DASHBOARD')}
+                    onRefresh={() => fetchAllData(false)}
+                    t={t}
+                    initialTab="PRESENSI"
+                  />
+                );
+              }
+
+              if (currentView === 'DOSEN_JURNAL' && selectedCourse) {
+                return (
+                  <DosenPresensi
+                    user={user}
+                    selectedCourse={selectedCourse}
+                    sessions={sessions}
+                    attendances={attendances}
+                    students={students}
+                    enrollments={enrollments}
+                    journals={journals}
+                    onBack={() => setCurrentView('DASHBOARD')}
+                    onRefresh={() => fetchAllData(false)}
+                    t={t}
+                    initialTab="JURNAL"
+                  />
+                );
+              }
+
+              if (currentView === 'DOSEN_REKAP' && selectedCourse) {
+                return (
+                  <DosenRekap
+                    selectedCourse={selectedCourse}
+                    sessions={sessions}
+                    attendances={attendances}
+                    students={students}
+                    enrollments={enrollments}
+                    onBack={() => setCurrentView('DASHBOARD')}
+                    t={t}
+                  />
+                );
+              }
+
+              if (currentView === 'ADMIN_COURSES') {
+                return <AdminManageCourses onBack={() => setCurrentView('DASHBOARD')} />;
+              }
+
+              return (
+                <DashboardDosen
+                  user={user}
+                  courses={courses}
+                  sessions={sessions}
+                  attendances={attendances}
+                  enrollments={enrollments}
+                  onRefresh={() => fetchAllData(false)}
+                  lang={lang}
+                  t={t}
+                  onAddCourse={initiateAddCourse}
+                  onEditCourse={initiateEditCourse}
+                  onManageAttendance={(c) => {
+                    setSelectedCourse(c);
+                    setCurrentView('DOSEN_PRESENSI');
+                  }}
+                  onWriteJournal={(c) => {
+                    setSelectedCourse(c);
+                    setCurrentView('DOSEN_JURNAL');
+                  }}
+                  onShowRecap={(c) => {
+                    setSelectedCourse(c);
+                    setCurrentView('DOSEN_REKAP');
+                  }}
+                />
+              );
+            }
+
+            return null;
+          })()
+        )}
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
