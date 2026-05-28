@@ -105,7 +105,7 @@ export default function App() {
   }, [user]);
 
   // Handle Login submission
-  const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     setIsSyncing(true);
@@ -118,16 +118,25 @@ export default function App() {
 
     try {
       const res = await ApiClient.login(emailInput, passwordInput);
-      if (res.success && res.user) {
+      
+      // PERBAIKAN: Validasi ketat untuk memastikan 'res' tidak undefined sebelum membaca propertinya
+      if (res && res.success && res.data && res.data.user) {
+        setUser(res.data.user);
+        setEmailInput('');
+        setPasswordInput('');
+        setCurrentView('LANDING'); 
+      } else if (res && res.success && res.user) {
+        // Antisipasi jika data user berada di tingkat root objek res
         setUser(res.user);
         setEmailInput('');
         setPasswordInput('');
         setCurrentView('LANDING');
       } else {
-        setAuthError(res.message || t.loginError);
+        // Jika gagal login atau data tidak cocok
+        setAuthError(res?.message || res?.data?.message || t.loginError || 'Kredensial salah atau tidak cocok!');
       }
     } catch (err: any) {
-      setAuthError(err.message || 'Error autentikasi.');
+      setAuthError(err.message || 'Error autentikasi jaringan.');
     } finally {
       setIsSyncing(false);
     }
