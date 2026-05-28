@@ -16,14 +16,10 @@ import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardMahasiswa } from './pages/DashboardMahasiswa';
 import { MahasiswaJurnal } from './pages/MahasiswaJurnal';
-import { MahasiswaRiwayat } from './pages/MahasiswaRiwayat';
 import { DashboardDosen } from './pages/DashboardDosen';
 import { DosenPresensi } from './pages/DosenPresensi';
-import { DosenJurnal } from './pages/DosenJurnal';
 import { DosenRekap } from './pages/DosenRekap';
 import { AdminManageCourses } from './pages/AdminManageCourses';
-
-import { ArrowLeft, Save } from 'lucide-react';
 
 export default function App() {
   // Localization States
@@ -94,7 +90,7 @@ export default function App() {
     } catch (err) {
       console.error('Failed syncing system data', err);
     } finally {
-      setIsSyncing(false);
+      if (showLoader) setIsSyncing(false);
     }
   };
 
@@ -126,7 +122,7 @@ export default function App() {
         setUser(res.user);
         setEmailInput('');
         setPasswordInput('');
-        setCurrentView('LANDING'); // After login, Navbar & Dashboard redirects correctly
+        setCurrentView('LANDING');
       } else {
         setAuthError(res.message || t.loginError);
       }
@@ -137,7 +133,7 @@ export default function App() {
     }
   };
 
-   const handleLogout = () => {
+  const handleLogout = () => {
     setUser(null);
     setCurrentView('LANDING');
     setActiveTab('DASHBOARD');
@@ -211,7 +207,6 @@ export default function App() {
     setShowCourseForm(true);
   };
 
-  // Map Courses to student logged in enrollments
   const studentCourses = courses.filter(course =>
     enrollments.some(e => e.kodeMK === course.kodeMK && e.idMahasiswa === user?.id)
   );
@@ -233,7 +228,6 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Settings view panel override */}
         {activeTab === 'SETTINGS' ? (
           <SettingsPanel
             onSaved={() => {
@@ -244,9 +238,7 @@ export default function App() {
             t={t}
           />
         ) : (
-          /* Main view router switcher */
           (() => {
-            // UN-AUTHENTICATED PATH
             if (!user) {
               if (currentView === 'LOGIN') {
                 return (
@@ -272,16 +264,17 @@ export default function App() {
               );
             }
 
-            // AUTHENTICATED PATH - COURSE FORM POPUP / VIEW
             if (showCourseForm) {
               return (
                 <div className="bg-white rounded-2xl border border-slate-250 p-6 max-w-2xl mx-auto space-y-6 shadow-sm">
                   <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
                     <button
+                      type="button"
                       onClick={() => setShowCourseForm(false)}
                       className="p-2 hover:bg-slate-100 rounded-xl hover:cursor-pointer transition"
                     >
-                      <ArrowLeft className="w-5 h-5 text-slate-600" />
+                      {/* Native SVG ArrowLeft - Anti Crash Vercel */}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     </button>
                     <h3 className="font-extrabold text-slate-800 text-lg">
                       {courseFormMode === 'ADD' ? t.addCourse : t.editCourse}
@@ -291,7 +284,7 @@ export default function App() {
                   <form onSubmit={handleSaveCourse} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-605 text-slate-600">{t.courseCode}</label>
+                        <label className="text-xs font-bold text-slate-600">{t.courseCode}</label>
                         <input
                           type="text"
                           placeholder="Contoh: PAI-402"
@@ -303,7 +296,7 @@ export default function App() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-605 text-slate-600">{t.semesterPeriod}</label>
+                        <label className="text-xs font-bold text-slate-600">{t.semesterPeriod}</label>
                         <input
                           type="text"
                           placeholder="Ganjil 2025/2026"
@@ -314,7 +307,7 @@ export default function App() {
                       </div>
 
                       <div className="md:col-span-2 space-y-1.5">
-                        <label className="text-xs font-bold text-slate-605 text-slate-600">{t.courseName}</label>
+                        <label className="text-xs font-bold text-slate-600">{t.courseName}</label>
                         <input
                           type="text"
                           placeholder="Contoh: Ulumul Qur'an & Metodologi Tafsir"
@@ -340,7 +333,7 @@ export default function App() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-605 text-slate-600">{t.room}</label>
+                        <label className="text-xs font-bold text-slate-600">{t.room}</label>
                         <input
                           type="text"
                           placeholder="Contoh: R.304 / Gedung Tarbiyah"
@@ -351,7 +344,7 @@ export default function App() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-605 text-slate-600">{t.startTime}</label>
+                        <label className="text-xs font-bold text-slate-600">{t.startTime}</label>
                         <input
                           type="time"
                           value={courseForm.jamMulai}
@@ -361,7 +354,7 @@ export default function App() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-605 text-slate-600">{t.endTime}</label>
+                        <label className="text-xs font-bold text-slate-600">{t.endTime}</label>
                         <input
                           type="time"
                           value={courseForm.jamSelesai}
@@ -375,15 +368,16 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => setShowCourseForm(false)}
-                        className="hover:cursor-pointer text-xs font-bold px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-705 rounded-lg transition"
+                        className="hover:cursor-pointer text-xs font-bold px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
                       >
                         {t.cancel}
                       </button>
                       <button
                         type="submit"
-                        className="hover:cursor-pointer text-xs font-bold px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md shrink-0 transition"
+                        className="hover:cursor-pointer text-xs font-bold px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md shrink-0 flex items-center gap-2 transition"
                       >
-                        <Save className="w-4 h-4" />
+                        {/* Native SVG Save Icon - Anti Crash Vercel */}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                         Simpan MK
                       </button>
                     </div>
@@ -392,7 +386,6 @@ export default function App() {
               );
             }
 
-            // LANDING PAGE (AUTHENTICATED HOME PAGE REDIRECTOR VIEW)
             if (currentView === 'LANDING') {
               return (
                 <LandingPage
@@ -404,7 +397,6 @@ export default function App() {
               );
             }
 
-            // ATTACH MAHASISWA FLOWS
             if (user.role === 'MAHASISWA') {
               if (currentView === 'MAHASISWA_JURNAL') {
                 return (
@@ -459,7 +451,6 @@ export default function App() {
               );
             }
 
-            // ATTACH DOSEN FLOWS
             if (user.role === 'DOSEN') {
               if (currentView === 'DOSEN_PRESENSI' && selectedCourse) {
                 return (
