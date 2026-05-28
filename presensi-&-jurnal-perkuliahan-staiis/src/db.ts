@@ -28,15 +28,6 @@ const initialUsers: User[] = [
     status: 'AKTIF'
   },
   {
-    id: 'dosen-2',
-    name: 'Dr. Laila Fitriana, M.Ag.',
-    email: 'laila@siakad.ac.id',
-    role: 'DOSEN',
-    programStudi: 'Hukum Keluarga Islam (HKI)',
-    nipNim: '198506152010022004',
-    status: 'AKTIF'
-  },
-  {
     id: 'mhs-1',
     name: 'Muhammad Al-Fatih',
     email: 'fatih@siakad.ac.id',
@@ -82,7 +73,6 @@ const initialSessions: AttendanceSession[] = [
 ];
 
 const initialAttendances: Attendance[] = [];
-
 const initialJournals: Journal[] = [];
 
 /* ================================
@@ -102,7 +92,7 @@ class LocalDatabase {
     if (typeof window === 'undefined') return fallback;
 
     const value = localStorage.getItem(`siakad_${key}`);
-    return this.safeParse<T>(value, fallback);
+    return this.safeParse(value, fallback);
   }
 
   private setStorage<T>(key: string, value: T): void {
@@ -115,16 +105,16 @@ class LocalDatabase {
     return this.getStorage('users', initialUsers);
   }
 
-  setUsers(users: User[]): void {
-    this.setStorage('users', users);
+  setUsers(data: User[]): void {
+    this.setStorage('users', data);
   }
 
   getCourses(): Course[] {
     return this.getStorage('courses', initialCourses);
   }
 
-  setCourses(courses: Course[]): void {
-    this.setStorage('courses', courses);
+  setCourses(data: Course[]): void {
+    this.setStorage('courses', data);
   }
 
   getEnrollments(): Enrollment[] {
@@ -179,14 +169,16 @@ function getPropCaseInsensitive(obj: any, keys: string[]) {
   if (!obj) return undefined;
 
   for (const key of keys) {
-    if (obj[key] !== undefined) return obj[key];
+    if (obj[key] !== undefined && obj[key] !== null) {
+      return obj[key];
+    }
   }
 
-  const lower = keys.map(k => k.toLowerCase());
+  const lowerKeys = keys.map(k => k.toLowerCase());
 
-  for (const actual of Object.keys(obj)) {
-    if (lower.includes(actual.toLowerCase())) {
-      return obj[actual];
+  for (const actualKey of Object.keys(obj)) {
+    if (lowerKeys.includes(actualKey.toLowerCase())) {
+      return obj[actualKey];
     }
   }
 
@@ -210,7 +202,7 @@ async function requestGAS(
     headers:
       method === 'POST'
         ? {
-            'Content-Type': 'application/json'
+            'Content-Type': 'text/plain'
           }
         : undefined,
     body:
@@ -228,8 +220,8 @@ async function requestGAS(
 
   const data = await response.json();
 
-  if (!data?.success) {
-    throw new Error(data?.error || 'Apps Script Error');
+  if (!data.success) {
+    throw new Error(data.error || 'Apps Script Error');
   }
 
   return data.data;
@@ -245,7 +237,7 @@ export class ApiClient {
 
   static getGasUrl(): string {
     if (typeof window === 'undefined') {
-      return this.DEFAULT_GAS_URL;
+      return '';
     }
 
     return (
@@ -261,7 +253,7 @@ export class ApiClient {
   }
 
   static isLiveMode(): boolean {
-    return Boolean(this.getGasUrl());
+    return !!this.getGasUrl();
   }
 
   /* ================================
@@ -288,7 +280,7 @@ export class ApiClient {
 
       if (!user) return null;
 
-      const saved =
+      const savedPasswords =
         typeof window !== 'undefined'
           ? JSON.parse(
               localStorage.getItem(
@@ -297,31 +289,31 @@ export class ApiClient {
             )
           : {};
 
-      const savedPass = saved[cleanEmail];
+      const savedPass =
+        savedPasswords[cleanEmail];
 
       const defaultPass =
         user.role === 'DOSEN'
           ? 'dosen123'
           : 'mhs123';
 
-      if (
+      const isValid =
         cleanPass === savedPass ||
-        cleanPass === defaultPass
-      ) {
-        return {
-          success: true,
-          user
-        };
-      }
+        cleanPass === defaultPass;
 
-      return null;
+      if (!isValid) return null;
+
+      return {
+        success: true,
+        user
+      };
     };
 
     if (!this.isLiveMode()) {
       return (
         loginLocal() || {
           success: false,
-          message: 'Login gagal'
+          message: 'Email atau password salah'
         }
       );
     }
@@ -340,7 +332,12 @@ export class ApiClient {
       const u = res.user || res;
 
       const mappedUser: User = {
-        id: String(getPropCaseInsensitive(u, ['id', 'ID']) || ''),
+        id: String(
+          getPropCaseInsensitive(u, [
+            'id',
+            'ID'
+          ]) || ''
+        ),
         name: String(
           getPropCaseInsensitive(u, [
             'name',
@@ -353,10 +350,12 @@ export class ApiClient {
             'Email'
           ]) || ''
         ),
-        role: getPropCaseInsensitive(u, [
-          'role',
-          'Role'
-        ]) as 'DOSEN' | 'MAHASISWA',
+        role: (
+          getPropCaseInsensitive(u, [
+            'role',
+            'Role'
+          ]) || 'MAHASISWA'
+        ) as 'DOSEN' | 'MAHASISWA',
         programStudi: String(
           getPropCaseInsensitive(u, [
             'programStudi',
@@ -383,6 +382,32 @@ export class ApiClient {
         ) as 'AKTIF' | 'NON_AKTIF'
       };
 
+      const users = localDb.getUsers();
+
+      const exists = users.some(
+        usr => usr.email === mappedUser.email
+      );
+
+      if (!exists) {
+        users.push(mappedUser);
+        localDb.setUsers(users);
+      }
+
+      if (typeof window !== 'undefined') {
+        const passwords = JSON.parse(
+          localStorage.getItem(
+            'siakad_custom_passwords'
+          ) || '{}'
+        );
+
+        passwords[cleanEmail] = cleanPass;
+
+        localStorage.setItem(
+          'siakad_custom_passwords',
+          JSON.stringify(passwords)
+        );
+      }
+
       return {
         success: true,
         user: mappedUser
@@ -393,7 +418,9 @@ export class ApiClient {
       return (
         loginLocal() || {
           success: false,
-          message: err.message
+          message:
+            err.message ||
+            'Koneksi gagal'
         }
       );
     }
@@ -415,44 +442,58 @@ export class ApiClient {
         'GET'
       );
 
-      const courses: Course[] = (data || []).map((c: any) => ({
-        kodeMK: String(
-          getPropCaseInsensitive(c, ['kodeMK', 'Kode MK']) || ''
-        ),
-        namaMK: String(
-          getPropCaseInsensitive(c, ['namaMK', 'Nama MK']) || ''
-        ),
-        hari: String(
-          getPropCaseInsensitive(c, ['hari', 'Hari']) || ''
-        ),
-        jamMulai: String(
-          getPropCaseInsensitive(c, [
-            'jamMulai',
-            'Jam Mulai'
-          ]) || ''
-        ),
-        jamSelesai: String(
-          getPropCaseInsensitive(c, [
-            'jamSelesai',
-            'Jam Selesai'
-          ]) || ''
-        ),
-        ruang: String(
-          getPropCaseInsensitive(c, ['ruang', 'Ruang']) || ''
-        ),
-        dosenId: String(
-          getPropCaseInsensitive(c, [
-            'dosenId',
-            'Dosen Pengampu'
-          ]) || ''
-        ),
-        semester: String(
-          getPropCaseInsensitive(c, [
-            'semester',
-            'Semester'
-          ]) || ''
-        )
-      }));
+      const courses: Course[] = (data || []).map(
+        (c: any) => ({
+          kodeMK: String(
+            getPropCaseInsensitive(c, [
+              'kodeMK',
+              'Kode MK'
+            ]) || ''
+          ),
+          namaMK: String(
+            getPropCaseInsensitive(c, [
+              'namaMK',
+              'Nama MK'
+            ]) || ''
+          ),
+          hari: String(
+            getPropCaseInsensitive(c, [
+              'hari',
+              'Hari'
+            ]) || ''
+          ),
+          jamMulai: String(
+            getPropCaseInsensitive(c, [
+              'jamMulai',
+              'Jam Mulai'
+            ]) || ''
+          ),
+          jamSelesai: String(
+            getPropCaseInsensitive(c, [
+              'jamSelesai',
+              'Jam Selesai'
+            ]) || ''
+          ),
+          ruang: String(
+            getPropCaseInsensitive(c, [
+              'ruang',
+              'Ruang'
+            ]) || ''
+          ),
+          dosenId: String(
+            getPropCaseInsensitive(c, [
+              'dosenId',
+              'Dosen Pengampu'
+            ]) || ''
+          ),
+          semester: String(
+            getPropCaseInsensitive(c, [
+              'semester',
+              'Semester'
+            ]) || ''
+          )
+        })
+      );
 
       localDb.setCourses(courses);
 
@@ -467,7 +508,9 @@ export class ApiClient {
      CREATE COURSE
   ================================ */
 
-  static async createCourse(course: Course): Promise<void> {
+  static async createCourse(
+    course: Course
+  ): Promise<void> {
     const courses = localDb.getCourses();
 
     const exists = courses.some(
@@ -486,7 +529,9 @@ export class ApiClient {
         this.getGasUrl(),
         'createCourse',
         'POST',
-        { course }
+        {
+          course
+        }
       );
     } catch (err) {
       console.error(err);
@@ -511,34 +556,45 @@ export class ApiClient {
     );
 
     if (!session) {
-      throw new Error('Sesi tidak ditemukan');
+      throw new Error(
+        'Sesi tidak ditemukan'
+      );
     }
 
     if (session.status === 'DITUTUP') {
-      throw new Error('Sesi sudah ditutup');
+      throw new Error(
+        'Sesi sudah ditutup'
+      );
     }
 
     if (
       session.kodeUnik &&
       session.kodeUnik !== params.kodeMasukkan
     ) {
-      throw new Error('Kode unik salah');
+      throw new Error(
+        'Kode unik salah'
+      );
     }
 
-    const attendances = localDb.getAttendances();
+    const attendances =
+      localDb.getAttendances();
 
     const attendance: Attendance = {
       idSesi: params.idSesi,
       idMahasiswa: params.idMahasiswa,
-      statusKehadiran: params.statusKehadiran,
-      waktuPresensi: new Date().toISOString(),
-      ipAddressMetode: params.ipAddressMetode
+      statusKehadiran:
+        params.statusKehadiran,
+      waktuPresensi:
+        new Date().toISOString(),
+      ipAddressMetode:
+        params.ipAddressMetode
     };
 
     const index = attendances.findIndex(
       a =>
         a.idSesi === params.idSesi &&
-        a.idMahasiswa === params.idMahasiswa
+        a.idMahasiswa ===
+          params.idMahasiswa
     );
 
     if (index >= 0) {
@@ -547,7 +603,9 @@ export class ApiClient {
       attendances.push(attendance);
     }
 
-    localDb.setAttendances(attendances);
+    localDb.setAttendances(
+      attendances
+    );
 
     if (!this.isLiveMode()) return;
 
