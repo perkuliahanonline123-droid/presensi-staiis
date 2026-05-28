@@ -75,9 +75,8 @@ export function LoginPage({
 
     setRegLoading(true);
     try {
-      // PERBAIKAN MUTLAK: Menggunakan pemanggilan dinamis agar kebal dari radar minifikasi Vercel
-      const apiEngine: any = ApiClient;
-      const res = await apiEngine["reg" + "ister"]({
+      // Pemanggilan API Normal (Karena fungsi register sudah kita tambahkan ke src/db.ts)
+      const res = await ApiClient.register({
         name: regName.trim(),
         email: regEmail.trim(),
         password: regPassword,
@@ -113,7 +112,6 @@ export function LoginPage({
     } catch (err: any) {
       setRegError(err.message || 'Gagal mendaftar ke server database.');
     } finally {
-      // FIX: Sudah diganti menjadi 'finally' agar tidak error compile lagi
       setRegLoading(false);
     }
   };
