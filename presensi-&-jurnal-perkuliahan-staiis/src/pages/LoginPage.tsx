@@ -75,7 +75,7 @@ export function LoginPage({
 
     setRegLoading(true);
     try {
-      // PERBAIKAN MUTLAK: Teks string digabung dinamis agar kebal 100% dari minifikasi paksa "Ve.register" oleh Vercel
+      // PERBAIKAN MUTLAK: Menggunakan pemanggilan dinamis agar kebal dari radar minifikasi Vercel
       const apiEngine: any = ApiClient;
       const res = await apiEngine["reg" + "ister"]({
         name: regName.trim(),
@@ -112,7 +112,8 @@ export function LoginPage({
       }
     } catch (err: any) {
       setRegError(err.message || 'Gagal mendaftar ke server database.');
-    } filter {
+    } finally {
+      // FIX: Sudah diganti menjadi 'finally' agar tidak error compile lagi
       setRegLoading(false);
     }
   };
