@@ -186,4 +186,107 @@ export class ApiClient {
         role: getPropCaseInsensitive(u, ['role', 'Role']) as 'DOSEN' | 'MAHASISWA',
         programStudi: String(getPropCaseInsensitive(u, ['programStudi', 'Program Studi']) || ''),
         semester: Number(getPropCaseInsensitive(u, ['semester', 'Semester']) || 0),
-        nipNim: String(getPropCaseInsensitive(u,
+        nipNim: String(getPropCaseInsensitive(u, ['nipNim', 'NIP / NIM']) || ''),
+        status: getPropCaseInsensitive(u, ['status', 'Status']) as 'AKTIF' | 'NON_AKTIF'
+      };
+
+      return {
+        success: true,
+        user: mappedUser
+      };
+
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err.message || 'Gagal tersambung ke jaringan database SIAKAD'
+      };
+    }
+  }
+
+  /* ================================
+     GET COURSES
+  ================================ */
+  static async getCourses(): Promise<Course[]> {
+    try {
+      const response = await requestGAS(this.getGasUrl(), 'getCourses', 'GET');
+      const data = response && response.success ? response.data : [];
+      
+      return (data || []).map(function(c: any) {
+        return {
+          kodeMK: String(getPropCaseInsensitive(c, ['kodeMK', 'Kode MK']) || ''),
+          namaMK: String(getPropCaseInsensitive(c, ['namaMK', 'Nama MK']) || ''),
+          hari: String(getPropCaseInsensitive(c, ['hari', 'Hari']) || ''),
+          jamMulai: String(getPropCaseInsensitive(c, ['jamMulai', 'Jam Mulai']) || ''),
+          jamSelesai: String(getPropCaseInsensitive(c, ['jamSelesai', 'Jam Selesai']) || ''),
+          ruang: String(getPropCaseInsensitive(c, ['ruang', 'Ruang']) || ''),
+          dosenId: String(getPropCaseInsensitive(c, ['dosenId', 'Dosen Pengampu']) || ''),
+          semester: String(getPropCaseInsensitive(c, ['semester', 'Semester']) || '')
+        };
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  // AMAN: Diekstrak datanya di sini baru dikirim sebagai Array murni ke App.tsx agar tidak memicu Type Error
+  static async getSessions(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getSessions', 'GET'); if (r && r.success && Array.isArray(r.data)) return r.data; if (Array.isArray(r)) return r; return []; } catch { return []; } }
+  static async getAttendances(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getAttendances', 'GET'); if (r && r.success && Array.isArray(r.data)) return r.data; if (Array.isArray(r)) return r; return []; } catch { return []; } }
+  static async getJournals(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getJournals', 'GET'); if (r && r.success && Array.isArray(r.data)) return r.data; if (Array.isArray(r)) return r; return []; } catch { return []; } }
+  static async getUsersDirect(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getUserData', 'GET'); if (r && r.success && Array.isArray(r.data)) return r.data; if (Array.isArray(r)) return r; return []; } catch { return []; } }
+  static async getEnrollments(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getEnrollments', 'GET'); if (r && r.success && Array.isArray(r.data)) return r.data; if (Array.isArray(r)) return r; return []; } catch { return []; } }
+
+  /* ================================
+     CREATE COURSE
+  ================================ */
+  static async createCourse(course: Course): Promise<void> {
+    await requestGAS(this.getGasUrl(), 'createCourse', 'POST', { course: course });
+  }
+
+  /* ================================
+     UPDATE COURSE
+  ================================ */
+  static async updateCourse(kodeMK: string, course: Course): Promise<void> {
+    await requestGAS(this.getGasUrl(), 'updateCourse', 'POST', { kodeMK: kodeMK, course: course });
+  }
+
+  /* ================================
+     OPEN SESSION
+  ================================ */
+  static async openSession(session: any): Promise<any> {
+    try {
+      const response = await requestGAS(this.getGasUrl(), 'openSession', 'POST', { session: session });
+      return response;
+    } catch (err: any) {
+      console.error("Gagal membuka sesi kelas:", err);
+      return { success: false, error: err.message || "Gagal membuat sesi absensi baru." };
+    }
+  }
+
+  /* ================================
+     RECORD ATTENDANCE
+  ================================ */
+  static async recordAttendance(params: { idSesi: string; idMahasiswa: string; statusKehadiran: AttendanceStatus; kodeMasukkan?: string; ipAddressMetode: string; }): Promise<void> {
+    const attendance: Attendance = {
+      idSesi: params.idSesi,
+      idMahasiswa: params.idMahasiswa,
+      statusKehadiran: params.statusKehadiran,
+      waktuPresensi: new Date().toISOString(),
+      ipAddressMetode: params.ipAddressMetode
+    };
+
+    await requestGAS(this.getGasUrl(), 'recordAttendance', 'POST', { attendance: attendance });
+  }
+
+  /* ================================
+     SAVE JOURNAL
+  ================================ */
+  static async saveJournal(journal: Journal): Promise<any> {
+    try {
+      const response = await requestGAS(this.getGasUrl(), 'saveJournal', 'POST', { journal: journal });
+      return response;
+    } catch (err: any) {
+      console.error("Gagal menyimpan jurnal perkuliahan:", err);
+      return { success: false, error: err.message || "Gagal menyimpan jurnal ke database." };
+    }
+  }
+}
