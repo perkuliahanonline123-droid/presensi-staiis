@@ -1,4 +1,3 @@
-```ts
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -41,13 +40,9 @@ const initialUsers: User[] = [
 ];
 
 const initialCourses: Course[] = [];
-
 const initialEnrollments: Enrollment[] = [];
-
 const initialSessions: AttendanceSession[] = [];
-
 const initialAttendances: Attendance[] = [];
-
 const initialJournals: Journal[] = [];
 
 /* ================================
@@ -62,9 +57,11 @@ class LocalDatabase {
   ): T {
 
     try {
-      return value
-        ? JSON.parse(value)
-        : fallback;
+      if (!value) {
+        return fallback;
+      }
+
+      return JSON.parse(value);
 
     } catch {
       return fallback;
@@ -80,11 +77,16 @@ class LocalDatabase {
       return fallback;
     }
 
+    const storageKey = 'siakad_' + key;
+
     const value = localStorage.getItem(
-      `siakad_${key}`
+      storageKey
     );
 
-    return this.safeParse(value, fallback);
+    return this.safeParse<T>(
+      value,
+      fallback
+    );
   }
 
   private setStorage<T>(
@@ -96,76 +98,108 @@ class LocalDatabase {
       return;
     }
 
+    const storageKey = 'siakad_' + key;
+
     localStorage.setItem(
-      `siakad_${key}`,
+      storageKey,
       JSON.stringify(value)
     );
   }
 
   getUsers(): User[] {
-    return this.getStorage(
+    return this.getStorage<User[]>(
       'users',
       initialUsers
     );
   }
 
   setUsers(data: User[]): void {
-    this.setStorage('users', data);
+    this.setStorage<User[]>(
+      'users',
+      data
+    );
   }
 
   getCourses(): Course[] {
-    return this.getStorage(
+    return this.getStorage<Course[]>(
       'courses',
       initialCourses
     );
   }
 
   setCourses(data: Course[]): void {
-    this.setStorage('courses', data);
+    this.setStorage<Course[]>(
+      'courses',
+      data
+    );
   }
 
   getEnrollments(): Enrollment[] {
-    return this.getStorage(
+    return this.getStorage<Enrollment[]>(
       'enrollments',
       initialEnrollments
     );
   }
 
-  setEnrollments(data: Enrollment[]): void {
-    this.setStorage('enrollments', data);
+  setEnrollments(
+    data: Enrollment[]
+  ): void {
+
+    this.setStorage<Enrollment[]>(
+      'enrollments',
+      data
+    );
   }
 
   getSessions(): AttendanceSession[] {
-    return this.getStorage(
+    return this.getStorage<AttendanceSession[]>(
       'sessions',
       initialSessions
     );
   }
 
-  setSessions(data: AttendanceSession[]): void {
-    this.setStorage('sessions', data);
+  setSessions(
+    data: AttendanceSession[]
+  ): void {
+
+    this.setStorage<AttendanceSession[]>(
+      'sessions',
+      data
+    );
   }
 
   getAttendances(): Attendance[] {
-    return this.getStorage(
+    return this.getStorage<Attendance[]>(
       'attendances',
       initialAttendances
     );
   }
 
-  setAttendances(data: Attendance[]): void {
-    this.setStorage('attendances', data);
+  setAttendances(
+    data: Attendance[]
+  ): void {
+
+    this.setStorage<Attendance[]>(
+      'attendances',
+      data
+    );
   }
 
   getJournals(): Journal[] {
-    return this.getStorage(
+    return this.getStorage<Journal[]>(
       'journals',
       initialJournals
     );
   }
 
-  setJournals(data: Journal[]): void {
-    this.setStorage('journals', data);
+  setJournals(
+    data: Journal[]
+  ): void {
+
+    this.setStorage<Journal[]>(
+      'journals',
+      data
+    );
   }
 }
 
@@ -181,7 +215,9 @@ function getPropCaseInsensitive(
   keys: string[]
 ) {
 
-  if (!obj) return undefined;
+  if (!obj) {
+    return undefined;
+  }
 
   for (const key of keys) {
 
@@ -194,7 +230,9 @@ function getPropCaseInsensitive(
   }
 
   const lowerKeys = keys.map(
-    k => k.toLowerCase()
+    function(k) {
+      return k.toLowerCase();
+    }
   );
 
   for (const actualKey of Object.keys(obj)) {
@@ -220,31 +258,37 @@ async function requestGAS(
 
   const fullUrl =
     method === 'GET'
-      ? `${url}?action=${encodeURIComponent(action)}`
+      ? url + '?action=' + encodeURIComponent(action)
       : url;
 
   const response = await fetch(
     fullUrl,
     {
-      method,
+      method: method,
       mode: 'cors',
+
       headers:
         method === 'POST'
           ? {
-              'Content-Type':
-                'text/plain'
+              'Content-Type': 'text/plain'
             }
           : undefined,
 
       body:
         method === 'POST'
           ? JSON.stringify({
-              action,
+              action: action,
               ...body
             })
           : undefined
     }
   );
+
+  if (!response.ok) {
+    throw new Error(
+      'HTTP ' + response.status
+    );
+  }
 
   const data = await response.json();
 
@@ -273,16 +317,16 @@ export class ApiClient {
       return '';
     }
 
-    return (
+    const saved =
       localStorage.getItem(
         'siakad_gas_url'
-      ) ||
-      this.DEFAULT_GAS_URL
-    );
+      );
+
+    return saved || this.DEFAULT_GAS_URL;
   }
 
   static isLiveMode(): boolean {
-    return !!this.getGasUrl();
+    return true;
   }
 
   /* ================================
@@ -292,83 +336,108 @@ export class ApiClient {
   static async login(
     email: string,
     password: string
-  ) {
+  ): Promise<{
+    success: boolean;
+    user?: User;
+    message?: string;
+  }> {
 
-    const res = await requestGAS(
-      this.getGasUrl(),
-      'login',
-      'POST',
-      {
-        email,
-        password
-      }
-    );
+    try {
 
-    const u = res.user;
+      const res = await requestGAS(
+        this.getGasUrl(),
+        'login',
+        'POST',
+        {
+          email: email,
+          password: password
+        }
+      );
 
-    const mappedUser: User = {
-      id: String(
-        getPropCaseInsensitive(
-          u,
-          ['id', 'ID']
-        ) || ''
-      ),
+      const u = res.user || res;
 
-      name: String(
-        getPropCaseInsensitive(
-          u,
-          ['name', 'Nama Lengkap']
-        ) || ''
-      ),
+      const mappedUser: User = {
+        id: String(
+          getPropCaseInsensitive(
+            u,
+            ['id', 'ID']
+          ) || ''
+        ),
 
-      email: String(
-        getPropCaseInsensitive(
-          u,
-          ['email', 'Email']
-        ) || ''
-      ),
+        name: String(
+          getPropCaseInsensitive(
+            u,
+            [
+              'name',
+              'Nama Lengkap'
+            ]
+          ) || ''
+        ),
 
-      role:
-        getPropCaseInsensitive(
-          u,
-          ['role', 'Role']
-        ) as 'DOSEN' | 'MAHASISWA',
+        email: String(
+          getPropCaseInsensitive(
+            u,
+            ['email', 'Email']
+          ) || ''
+        ),
 
-      programStudi: String(
-        getPropCaseInsensitive(
-          u,
-          [
-            'programStudi',
-            'Program Studi'
-          ]
-        ) || ''
-      ),
+        role:
+          getPropCaseInsensitive(
+            u,
+            ['role', 'Role']
+          ) as 'DOSEN' | 'MAHASISWA',
 
-      semester: Number(
-        getPropCaseInsensitive(
-          u,
-          ['semester', 'Semester']
-        ) || 0
-      ),
+        programStudi: String(
+          getPropCaseInsensitive(
+            u,
+            [
+              'programStudi',
+              'Program Studi'
+            ]
+          ) || ''
+        ),
 
-      nipNim: String(
-        getPropCaseInsensitive(
-          u,
-          ['nipNim', 'NIP / NIM']
-        ) || ''
-      ),
+        semester: Number(
+          getPropCaseInsensitive(
+            u,
+            [
+              'semester',
+              'Semester'
+            ]
+          ) || 0
+        ),
 
-      status:
-        getPropCaseInsensitive(
-          u,
-          ['status', 'Status']
-        ) as 'AKTIF' | 'NON_AKTIF'
-    };
+        nipNim: String(
+          getPropCaseInsensitive(
+            u,
+            [
+              'nipNim',
+              'NIP / NIM'
+            ]
+          ) || ''
+        ),
 
-    return {
-      success: true,
-      user: mappedUser
-    };
+        status:
+          getPropCaseInsensitive(
+            u,
+            ['status', 'Status']
+          ) as 'AKTIF' | 'NON_AKTIF'
+      };
+
+      return {
+        success: true,
+        user: mappedUser
+      };
+
+    } catch (err: any) {
+
+      return {
+        success: false,
+        message:
+          err.message ||
+          'Login gagal'
+      };
+    }
   }
 
   /* ================================
@@ -378,74 +447,90 @@ export class ApiClient {
   static async getCourses():
     Promise<Course[]> {
 
-    const data = await requestGAS(
-      this.getGasUrl(),
-      'getCourses',
-      'GET'
-    );
+    try {
 
-    return (data || []).map(
-      (c: any) => ({
-        kodeMK: String(
-          getPropCaseInsensitive(
-            c,
-            ['kodeMK', 'Kode MK']
-          ) || ''
-        ),
+      const data = await requestGAS(
+        this.getGasUrl(),
+        'getCourses',
+        'GET'
+      );
 
-        namaMK: String(
-          getPropCaseInsensitive(
-            c,
-            ['namaMK', 'Nama MK']
-          ) || ''
-        ),
+      return (data || []).map(
+        function(c: any) {
 
-        hari: String(
-          getPropCaseInsensitive(
-            c,
-            ['hari', 'Hari']
-          ) || ''
-        ),
+          return {
+            kodeMK: String(
+              getPropCaseInsensitive(
+                c,
+                ['kodeMK', 'Kode MK']
+              ) || ''
+            ),
 
-        jamMulai: String(
-          getPropCaseInsensitive(
-            c,
-            ['jamMulai', 'Jam Mulai']
-          ) || ''
-        ),
+            namaMK: String(
+              getPropCaseInsensitive(
+                c,
+                ['namaMK', 'Nama MK']
+              ) || ''
+            ),
 
-        jamSelesai: String(
-          getPropCaseInsensitive(
-            c,
-            ['jamSelesai', 'Jam Selesai']
-          ) || ''
-        ),
+            hari: String(
+              getPropCaseInsensitive(
+                c,
+                ['hari', 'Hari']
+              ) || ''
+            ),
 
-        ruang: String(
-          getPropCaseInsensitive(
-            c,
-            ['ruang', 'Ruang']
-          ) || ''
-        ),
+            jamMulai: String(
+              getPropCaseInsensitive(
+                c,
+                [
+                  'jamMulai',
+                  'Jam Mulai'
+                ]
+              ) || ''
+            ),
 
-        dosenId: String(
-          getPropCaseInsensitive(
-            c,
-            [
-              'dosenId',
-              'Dosen Pengampu'
-            ]
-          ) || ''
-        ),
+            jamSelesai: String(
+              getPropCaseInsensitive(
+                c,
+                [
+                  'jamSelesai',
+                  'Jam Selesai'
+                ]
+              ) || ''
+            ),
 
-        semester: String(
-          getPropCaseInsensitive(
-            c,
-            ['semester', 'Semester']
-          ) || ''
-        )
-      })
-    );
+            ruang: String(
+              getPropCaseInsensitive(
+                c,
+                ['ruang', 'Ruang']
+              ) || ''
+            ),
+
+            dosenId: String(
+              getPropCaseInsensitive(
+                c,
+                [
+                  'dosenId',
+                  'Dosen Pengampu'
+                ]
+              ) || ''
+            ),
+
+            semester: String(
+              getPropCaseInsensitive(
+                c,
+                ['semester', 'Semester']
+              ) || ''
+            )
+          };
+        }
+      );
+
+    } catch {
+
+      return [];
+    }
   }
 
   /* ================================
@@ -461,7 +546,7 @@ export class ApiClient {
       'createCourse',
       'POST',
       {
-        course
+        course: course
       }
     );
   }
@@ -498,9 +583,8 @@ export class ApiClient {
       'recordAttendance',
       'POST',
       {
-        attendance
+        attendance: attendance
       }
     );
   }
 }
-```
