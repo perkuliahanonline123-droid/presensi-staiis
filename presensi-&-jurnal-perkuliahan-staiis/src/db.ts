@@ -136,4 +136,175 @@ async function requestGAS(url: string, action: string, method: 'GET' | 'POST', b
 ================================ */
 
 export class ApiClient {
-  static DEFAULT_GAS_URL = '
+  static DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyXHwbUiHQB1k0QmYDGIlt4T_WidAvqsGKcVjwJANE_BTSzej9kNl1MMWIxxcH4sk9jPw/exec';
+
+  static getGasUrl(): string {
+    if (typeof window === 'undefined') return '';
+    const saved = localStorage.getItem('siakad_gas_url');
+    return saved || this.DEFAULT_GAS_URL;
+  }
+
+  static isLiveMode(): boolean { return true; }
+
+  /* ================================
+     LOGIN
+  ================================ */
+  static async login(email: string, password: string): Promise<{ success: boolean; user?: User; message?: string }> {
+    try {
+      const responseBody = await requestGAS(
+        this.getGasUrl(),
+        'login',
+        'POST',
+        { email: email, password: password }
+      );
+
+      if (!responseBody) {
+        return { success: false, message: 'Tidak ada respons balasan dari server database.' };
+      }
+
+      if (responseBody.success === false) {
+        return { success: false, message: responseBody.error || 'Email atau password Anda salah!' };
+      }
+
+      const resData = responseBody.data || responseBody;
+      
+      if (!resData || (resData.success === false)) {
+        return { success: false, message: resData.message || resData.error || 'Kredensial tidak cocok.' };
+      }
+
+      const u = resData.user || resData;
+
+      const checkId = getPropCaseInsensitive(u, ['id', 'ID']);
+      if (!checkId) {
+        return { success: false, message: 'Akun Anda belum terdaftar di sistem SIAKAD.' };
+      }
+
+      const mappedUser: User = {
+        id: String(checkId || ''),
+        name: String(getPropCaseInsensitive(u, ['name', 'Nama Lengkap']) || ''),
+        email: String(getPropCaseInsensitive(u, ['email', 'Email']) || ''),
+        role: getPropCaseInsensitive(u, ['role', 'Role']) as 'DOSEN' | 'MAHASISWA',
+        programStudi: String(getPropCaseInsensitive(u, ['programStudi', 'Program Studi']) || ''),
+        semester: Number(getPropCaseInsensitive(u, ['semester', 'Semester']) || 0),
+        nipNim: String(getPropCaseInsensitive(u, ['nipNim', 'NIP / NIM']) || ''),
+        status: getPropCaseInsensitive(u, ['status', 'Status']) as 'AKTIF' | 'NON_AKTIF'
+      };
+
+      return {
+        success: true,
+        user: mappedUser
+      };
+
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err.message || 'Gagal tersambung ke jaringan database SIAKAD'
+      };
+    }
+  }
+
+  /* ================================
+     GET COURSES
+  ================================ */
+  static async getCourses(): Promise<Course[]> {
+    try {
+      const response = await requestGAS(this.getGasUrl(), 'getCourses', 'GET');
+      const data = response && response.success ? response.data : [];
+      
+      return (data || []).map(function(c: any) {
+        return {
+          kodeMK: String(getPropCaseInsensitive(c, ['kodeMK', 'Kode MK']) || ''),
+          namaMK: String(getPropCaseInsensitive(c, ['namaMK', 'Nama MK']) || ''),
+          hari: String(getPropCaseInsensitive(c, ['hari', 'Hari']) || ''),
+          jamMulai: String(getPropCaseInsensitive(c, ['jamMulai', 'Jam Mulai']) || ''),
+          jamSelesai: String(getPropCaseInsensitive(c, ['jamSelesai', 'Jam Selesai']) || ''),
+          ruang: String(getPropCaseInsensitive(c, ['ruang', 'Ruang']) || ''),
+          dosenId: String(getPropCaseInsensitive(c, ['dosenId', 'Dosen Pengampu']) || ''),
+          semester: String(getPropCaseInsensitive(c, ['semester', 'Semester']) || '')
+        };
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  static async getSessions(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getSessions', 'GET'); if (r && r.success && Array.isArray(r.data)) return r.data; if (Array.isArray(r)) return r; return []; } catch { return []; } }
+  static async getAttendances(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getAttendances', 'GET'); if (r && r.success && Array.isArray(r.data)) return r.data; if (Array.isArray(r)) return r; return []; } catch { return []; } }
+  static async getJournals(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getJournals', 'GET'); if (r && r.success && Array.isArray(r.data)) return r.data; if (Array.isArray(r)) return r; return []; } catch { return []; } }
+  static async getUsersDirect(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getUserData', 'GET'); if (r && r.success && Array.isArray(r.data)) return r.data; if (Array.isArray(r)) return r; return []; } catch { return []; } }
+  static async getEnrollments(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getEnrollments', 'GET'); if (r && r.success && Array.isArray(r.data)) return r.data; if (Array.isArray(r)) return r; return []; } catch { return []; } }
+
+  /* ================================
+     CREATE COURSE
+  ================================ */
+  static async createCourse(course: Course): Promise<any> {
+    return await requestGAS(this.getGasUrl(), 'createCourse', 'POST', { course: course });
+  }
+
+  /* ================================
+     UPDATE COURSE (FIXED PARAMETER OPSIONAL AGAR COMPILER VERCEL LOLOS)
+  ================================ */
+  static async updateCourse(kodeMK: string, course?: any): Promise<any> {
+    const payloadCourse = course || {};
+    return await requestGAS(this.getGasUrl(), 'updateCourse', 'POST', { kodeMK: kodeMK, course: payloadCourse });
+  }
+
+  /* ================================
+     OPEN SESSION
+  ================================ */
+  static async openSession(session: any): Promise<any> {
+    try {
+      const response = await requestGAS(this.getGasUrl(), 'openSession', 'POST', { session: session });
+      return response;
+    } catch (err: any) {
+      console.error("Gagal membuka sesi kelas:", err);
+      return { success: false, error: err.message || "Gagal membuat sesi absensi baru." };
+    }
+  }
+
+  /* ================================
+     RECORD ATTENDANCE
+  ================================ */
+  static async recordAttendance(params: { idSesi: string; idMahasiswa: string; statusKehadiran: AttendanceStatus; kodeMasukkan?: string; ipAddressMetode: string; }): Promise<any> {
+    const attendance: Attendance = {
+      idSesi: params.idSesi,
+      idMahasiswa: params.idMahasiswa,
+      statusKehadiran: params.statusKehadiran,
+      waktuPresensi: new Date().toISOString(),
+      ipAddressMetode: params.ipAddressMetode
+    };
+
+    return await requestGAS(this.getGasUrl(), 'recordAttendance', 'POST', { attendance: attendance });
+  }
+
+  /* ================================
+     UPDATE ATTENDANCE BY DOSEN
+  ================================ */
+  static async updateAttendanceByDosen(idSesi: string, attendances: any[]): Promise<any> {
+    try {
+      const response = await requestGAS(
+        this.getGasUrl(), 
+        'updateAttendanceByDosen', 
+        'POST', 
+        { idSesi: idSesi, attendances: attendances }
+      );
+      return response;
+    } catch (err: any) {
+      console.error("Gagal update absensi manual dosen:", err);
+      return { success: false, error: err.message || "Gagal memperbarui absensi manual." };
+    }
+  }
+
+  /* ================================
+     SAVE JOURNAL
+  ================================ */
+  static async saveJournal(journal: Journal): Promise<any> {
+    try {
+      const response = await requestGAS(this.getGasUrl(), 'saveJournal', 'POST', { journal: journal });
+      return response;
+    } catch (err: any) {
+      console.error("Gagal menyimpan jurnal perkuliahan:", err);
+      return { success: false, error: err.message || "Gagal menyimpan jurnal ke database." };
+    }
+  }
+}
