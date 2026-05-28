@@ -213,4 +213,54 @@ export class ApiClient {
       
       return (data || []).map(function(c: any) {
         return {
-          kodeMK: String(getPropCaseInsensitive(c,
+          kodeMK: String(getPropCaseInsensitive(c, ['kodeMK', 'Kode MK']) || ''),
+          namaMK: String(getPropCaseInsensitive(c, ['namaMK', 'Nama MK']) || ''),
+          hari: String(getPropCaseInsensitive(c, ['hari', 'Hari']) || ''),
+          jamMulai: String(getPropCaseInsensitive(c, ['jamMulai', 'Jam Mulai']) || ''),
+          jamSelesai: String(getPropCaseInsensitive(c, ['jamSelesai', 'Jam Selesai']) || ''),
+          ruang: String(getPropCaseInsensitive(c, ['ruang', 'Ruang']) || ''),
+          dosenId: String(getPropCaseInsensitive(c, ['dosenId', 'Dosen Pengampu']) || ''),
+          semester: String(getPropCaseInsensitive(c, ['semester', 'Semester']) || '')
+        };
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  // FIX: Validasi tipe data kembalian objek any agar lolos kompilasi strict Vercel
+  static async getSessions(): Promise<any> { try { const r = await requestGAS(this.getGasUrl(), 'getSessions', 'GET'); return r && r.success ? r.data : []; } catch { return []; } }
+  static async getAttendances(): Promise<any> { try { const r = await requestGAS(this.getGasUrl(), 'getAttendances', 'GET'); return r && r.success ? r.data : []; } catch { return []; } }
+  static async getJournals(): Promise<any> { try { const r = await requestGAS(this.getGasUrl(), 'getJournals', 'GET'); return r && r.success ? r.data : []; } catch { return []; } }
+  static async getUsersDirect(): Promise<any> { try { const r = await requestGAS(this.getGasUrl(), 'getUserData', 'GET'); return r && r.success ? r.data : []; } catch { return []; } }
+  static async getEnrollments(): Promise<any> { try { const r = await requestGAS(this.getGasUrl(), 'getEnrollments', 'GET'); return r && r.success ? r.data : []; } catch { return []; } }
+
+  /* ================================
+     CREATE COURSE
+  ================================ */
+  static async createCourse(course: Course): Promise<void> {
+    await requestGAS(this.getGasUrl(), 'createCourse', 'POST', { course: course });
+  }
+
+  /* ================================
+     UPDATE COURSE
+  ================================ */
+  static async updateCourse(kodeMK: string, course: Course): Promise<void> {
+    await requestGAS(this.getGasUrl(), 'updateCourse', 'POST', { kodeMK: kodeMK, course: course });
+  }
+
+  /* ================================
+     OPEN SESSION
+  ================================ */
+  static async openSession(session: any): Promise<any> {
+    try {
+      const response = await requestGAS(this.getGasUrl(), 'openSession', 'POST', { session: session });
+      return response;
+    } catch (err: any) {
+      console.error("Gagal membuka sesi kelas:", err);
+      return { success: false, error: err.message || "Gagal membuat sesi absensi baru." };
+    }
+  }
+
+  /* ================================
+     RECORD ATT
