@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Lang } from '../translations';
-import { Mail, Lock, Laptop, User, GraduationCap, BookOpen, ShieldAlert, CheckCircle2, UserCheck, ArrowRightLeft } from 'lucide-react';
+import { Mail, Lock, Laptop, User, GraduationCap, BookOpen, ShieldAlert, CheckCircle2, UserCheck } from 'lucide-react';
 import { ApiClient } from '../db';
 
 interface LoginPageProps {
@@ -75,7 +75,9 @@ export function LoginPage({
 
     setRegLoading(true);
     try {
-      const res = await ApiClient.register({
+      // FIX: Menggunakan braket objek bertipe string ["register"] agar compiler Vercel tidak mengubahnya menjadi Ve.register() saat proses minifikasi
+      const databaseEngine: any = ApiClient;
+      const res = await databaseEngine["register"]({
         name: regName.trim(),
         email: regEmail.trim(),
         password: regPassword,
@@ -85,7 +87,7 @@ export function LoginPage({
         semester: regRole === 'MAHASISWA' ? Number(regSemester) : undefined
       });
 
-      if (res.success) {
+      if (res && res.success) {
         setRegSuccess(t.signUpSuccess || 'Registrasi berhasil! Silakan masuk.');
         // Auto pre-fill login credentials for the user
         setEmailInput(regEmail.trim());
@@ -106,10 +108,10 @@ export function LoginPage({
           setRegSuccess('');
         }, 2200);
       } else {
-        setRegError(res.message || 'Registrasi gagal. Email mungkin sudah terdaftar.');
+        setRegError(res?.message || 'Registrasi gagal. Email mungkin sudah terdaftar.');
       }
     } catch (err: any) {
-      setRegError(err.message || 'Gagal mendaftar ke server.');
+      setRegError(err.message || 'Gagal mendaftar ke server database.');
     } finally {
       setRegLoading(false);
     }
@@ -199,8 +201,6 @@ export function LoginPage({
                 {t.dontHaveAccount || 'Belum punya akun? Daftar Sekarang'} &rarr;
               </button>
             </div>
-
-            {/* No quick demo presets section */}
           </>
         ) : (
           /* VIEW 2: REGISTRATION FORM */
@@ -277,7 +277,7 @@ export function LoginPage({
 
               {/* Email */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-705 text-slate-700">{t.emailLabel}</label>
+                <label className="text-xs font-semibold text-slate-700">{t.emailLabel}</label>
                 <div className="relative">
                   <Mail className={`w-4 h-4 text-slate-400 absolute top-3.5 ${isRTL ? 'right-3' : 'left-3'}`} />
                   <input
