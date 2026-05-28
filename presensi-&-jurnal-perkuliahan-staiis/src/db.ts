@@ -1,3 +1,4 @@
+```ts
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -39,40 +40,14 @@ const initialUsers: User[] = [
   }
 ];
 
-const initialCourses: Course[] = [
-  {
-    kodeMK: 'PAI-402',
-    namaMK: "Ulumul Qur'an & Metodologi Tafsir",
-    hari: 'Senin',
-    jamMulai: '08:15',
-    jamSelesai: '10:15',
-    ruang: 'Gedung Tarbiyah R.304',
-    dosenId: 'dosen-1',
-    semester: 'Ganjil 2025/2026'
-  }
-];
+const initialCourses: Course[] = [];
 
-const initialEnrollments: Enrollment[] = [
-  {
-    idMahasiswa: 'mhs-1',
-    kodeMK: 'PAI-402',
-    tahunAkademik: '2025/2026'
-  }
-];
+const initialEnrollments: Enrollment[] = [];
 
-const initialSessions: AttendanceSession[] = [
-  {
-    idSesi: 'session-demo-1',
-    kodeMK: 'PAI-402',
-    tanggal: '2026-05-25',
-    jamMulaiPresensi: '08:00',
-    jamSelesaiPresensi: '10:30',
-    kodeUnik: '412098',
-    status: 'DIBUKA'
-  }
-];
+const initialSessions: AttendanceSession[] = [];
 
 const initialAttendances: Attendance[] = [];
+
 const initialJournals: Journal[] = [];
 
 /* ================================
@@ -80,29 +55,58 @@ const initialJournals: Journal[] = [];
 ================================ */
 
 class LocalDatabase {
-  private safeParse<T>(value: string | null, fallback: T): T {
+
+  private safeParse<T>(
+    value: string | null,
+    fallback: T
+  ): T {
+
     try {
-      return value ? JSON.parse(value) : fallback;
+      return value
+        ? JSON.parse(value)
+        : fallback;
+
     } catch {
       return fallback;
     }
   }
 
-  private getStorage<T>(key: string, fallback: T): T {
-    if (typeof window === 'undefined') return fallback;
+  private getStorage<T>(
+    key: string,
+    fallback: T
+  ): T {
 
-    const value = localStorage.getItem(`siakad_${key}`);
+    if (typeof window === 'undefined') {
+      return fallback;
+    }
+
+    const value = localStorage.getItem(
+      `siakad_${key}`
+    );
+
     return this.safeParse(value, fallback);
   }
 
-  private setStorage<T>(key: string, value: T): void {
-    if (typeof window === 'undefined') return;
+  private setStorage<T>(
+    key: string,
+    value: T
+  ): void {
 
-    localStorage.setItem(`siakad_${key}`, JSON.stringify(value));
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    localStorage.setItem(
+      `siakad_${key}`,
+      JSON.stringify(value)
+    );
   }
 
   getUsers(): User[] {
-    return this.getStorage('users', initialUsers);
+    return this.getStorage(
+      'users',
+      initialUsers
+    );
   }
 
   setUsers(data: User[]): void {
@@ -110,7 +114,10 @@ class LocalDatabase {
   }
 
   getCourses(): Course[] {
-    return this.getStorage('courses', initialCourses);
+    return this.getStorage(
+      'courses',
+      initialCourses
+    );
   }
 
   setCourses(data: Course[]): void {
@@ -118,7 +125,10 @@ class LocalDatabase {
   }
 
   getEnrollments(): Enrollment[] {
-    return this.getStorage('enrollments', initialEnrollments);
+    return this.getStorage(
+      'enrollments',
+      initialEnrollments
+    );
   }
 
   setEnrollments(data: Enrollment[]): void {
@@ -126,7 +136,10 @@ class LocalDatabase {
   }
 
   getSessions(): AttendanceSession[] {
-    return this.getStorage('sessions', initialSessions);
+    return this.getStorage(
+      'sessions',
+      initialSessions
+    );
   }
 
   setSessions(data: AttendanceSession[]): void {
@@ -134,7 +147,10 @@ class LocalDatabase {
   }
 
   getAttendances(): Attendance[] {
-    return this.getStorage('attendances', initialAttendances);
+    return this.getStorage(
+      'attendances',
+      initialAttendances
+    );
   }
 
   setAttendances(data: Attendance[]): void {
@@ -142,42 +158,52 @@ class LocalDatabase {
   }
 
   getJournals(): Journal[] {
-    return this.getStorage('journals', initialJournals);
+    return this.getStorage(
+      'journals',
+      initialJournals
+    );
   }
 
   setJournals(data: Journal[]): void {
     this.setStorage('journals', data);
   }
-
-  resetDemoData(): void {
-    this.setUsers(initialUsers);
-    this.setCourses(initialCourses);
-    this.setEnrollments(initialEnrollments);
-    this.setSessions(initialSessions);
-    this.setAttendances(initialAttendances);
-    this.setJournals(initialJournals);
-  }
 }
 
-export const localDb = new LocalDatabase();
+export const localDb =
+  new LocalDatabase();
 
 /* ================================
    HELPERS
 ================================ */
 
-function getPropCaseInsensitive(obj: any, keys: string[]) {
+function getPropCaseInsensitive(
+  obj: any,
+  keys: string[]
+) {
+
   if (!obj) return undefined;
 
   for (const key of keys) {
-    if (obj[key] !== undefined && obj[key] !== null) {
+
+    if (
+      obj[key] !== undefined &&
+      obj[key] !== null
+    ) {
       return obj[key];
     }
   }
 
-  const lowerKeys = keys.map(k => k.toLowerCase());
+  const lowerKeys = keys.map(
+    k => k.toLowerCase()
+  );
 
   for (const actualKey of Object.keys(obj)) {
-    if (lowerKeys.includes(actualKey.toLowerCase())) {
+
+    if (
+      lowerKeys.includes(
+        actualKey.toLowerCase()
+      )
+    ) {
       return obj[actualKey];
     }
   }
@@ -191,37 +217,42 @@ async function requestGAS(
   method: 'GET' | 'POST',
   body?: any
 ): Promise<any> {
+
   const fullUrl =
     method === 'GET'
       ? `${url}?action=${encodeURIComponent(action)}`
       : url;
 
-  const response = await fetch(fullUrl, {
-    method,
-    mode: 'cors',
-    headers:
-      method === 'POST'
-        ? {
-            'Content-Type': 'text/plain'
-          }
-        : undefined,
-    body:
-      method === 'POST'
-        ? JSON.stringify({
-            action,
-            ...body
-          })
-        : undefined
-  });
+  const response = await fetch(
+    fullUrl,
+    {
+      method,
+      mode: 'cors',
+      headers:
+        method === 'POST'
+          ? {
+              'Content-Type':
+                'text/plain'
+            }
+          : undefined,
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
+      body:
+        method === 'POST'
+          ? JSON.stringify({
+              action,
+              ...body
+            })
+          : undefined
+    }
+  );
 
   const data = await response.json();
 
   if (!data.success) {
-    throw new Error(data.error || 'Apps Script Error');
+    throw new Error(
+      data.error ||
+      'Apps Script Error'
+    );
   }
 
   return data.data;
@@ -232,24 +263,22 @@ async function requestGAS(
 ================================ */
 
 export class ApiClient {
+
   static DEFAULT_GAS_URL =
     'https://script.google.com/macros/s/AKfycbyXHwbUiHQB1k0QmYDGIlt4T_WidAvqsGKcVjwJANE_BTSzej9kNl1MMWIxxcH4sk9jPw/exec';
 
   static getGasUrl(): string {
+
     if (typeof window === 'undefined') {
       return '';
     }
 
     return (
-      localStorage.getItem('siakad_gas_url') ||
+      localStorage.getItem(
+        'siakad_gas_url'
+      ) ||
       this.DEFAULT_GAS_URL
     );
-  }
-
-  static setGasUrl(url: string): void {
-    if (typeof window === 'undefined') return;
-
-    localStorage.setItem('siakad_gas_url', url.trim());
   }
 
   static isLiveMode(): boolean {
@@ -263,245 +292,160 @@ export class ApiClient {
   static async login(
     email: string,
     password: string
-  ): Promise<{
-    success: boolean;
-    user?: User;
-    message?: string;
-  }> {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPass = password.trim();
+  ) {
 
-    const loginLocal = () => {
-      const users = localDb.getUsers();
+    const res = await requestGAS(
+      this.getGasUrl(),
+      'login',
+      'POST',
+      {
+        email,
+        password
+      }
+    );
 
-      const user = users.find(
-        u => u.email.toLowerCase() === cleanEmail
-      );
+    const u = res.user;
 
-      if (!user) return null;
+    const mappedUser: User = {
+      id: String(
+        getPropCaseInsensitive(
+          u,
+          ['id', 'ID']
+        ) || ''
+      ),
 
-      const savedPasswords =
-        typeof window !== 'undefined'
-          ? JSON.parse(
-              localStorage.getItem(
-                'siakad_custom_passwords'
-              ) || '{}'
-            )
-          : {};
+      name: String(
+        getPropCaseInsensitive(
+          u,
+          ['name', 'Nama Lengkap']
+        ) || ''
+      ),
 
-      const savedPass =
-        savedPasswords[cleanEmail];
+      email: String(
+        getPropCaseInsensitive(
+          u,
+          ['email', 'Email']
+        ) || ''
+      ),
 
-      const defaultPass =
-        user.role === 'DOSEN'
-          ? 'dosen123'
-          : 'mhs123';
-
-      const isValid =
-        cleanPass === savedPass ||
-        cleanPass === defaultPass;
-
-      if (!isValid) return null;
-
-      return {
-        success: true,
-        user
-      };
-    };
-
-    if (!this.isLiveMode()) {
-      return (
-        loginLocal() || {
-          success: false,
-          message: 'Email atau password salah'
-        }
-      );
-    }
-
-    try {
-      const res = await requestGAS(
-        this.getGasUrl(),
-        'login',
-        'POST',
-        {
-          email: cleanEmail,
-          password: cleanPass
-        }
-      );
-
-      const u = res.user || res;
-
-      const mappedUser: User = {
-        id: String(
-          getPropCaseInsensitive(u, [
-            'id',
-            'ID'
-          ]) || ''
-        ),
-        name: String(
-          getPropCaseInsensitive(u, [
-            'name',
-            'Nama Lengkap'
-          ]) || ''
-        ),
-        email: String(
-          getPropCaseInsensitive(u, [
-            'email',
-            'Email'
-          ]) || ''
-        ),
-        role: (
-          getPropCaseInsensitive(u, [
-            'role',
-            'Role'
-          ]) || 'MAHASISWA'
+      role:
+        getPropCaseInsensitive(
+          u,
+          ['role', 'Role']
         ) as 'DOSEN' | 'MAHASISWA',
-        programStudi: String(
-          getPropCaseInsensitive(u, [
+
+      programStudi: String(
+        getPropCaseInsensitive(
+          u,
+          [
             'programStudi',
             'Program Studi'
-          ]) || ''
-        ),
-        semester: Number(
-          getPropCaseInsensitive(u, [
-            'semester',
-            'Semester'
-          ]) || 0
-        ),
-        nipNim: String(
-          getPropCaseInsensitive(u, [
-            'nipNim',
-            'NIP / NIM'
-          ]) || ''
-        ),
-        status: (
-          getPropCaseInsensitive(u, [
-            'status',
-            'Status'
-          ]) || 'AKTIF'
+          ]
+        ) || ''
+      ),
+
+      semester: Number(
+        getPropCaseInsensitive(
+          u,
+          ['semester', 'Semester']
+        ) || 0
+      ),
+
+      nipNim: String(
+        getPropCaseInsensitive(
+          u,
+          ['nipNim', 'NIP / NIM']
+        ) || ''
+      ),
+
+      status:
+        getPropCaseInsensitive(
+          u,
+          ['status', 'Status']
         ) as 'AKTIF' | 'NON_AKTIF'
-      };
+    };
 
-      const users = localDb.getUsers();
-
-      const exists = users.some(
-        usr => usr.email === mappedUser.email
-      );
-
-      if (!exists) {
-        users.push(mappedUser);
-        localDb.setUsers(users);
-      }
-
-      if (typeof window !== 'undefined') {
-        const passwords = JSON.parse(
-          localStorage.getItem(
-            'siakad_custom_passwords'
-          ) || '{}'
-        );
-
-        passwords[cleanEmail] = cleanPass;
-
-        localStorage.setItem(
-          'siakad_custom_passwords',
-          JSON.stringify(passwords)
-        );
-      }
-
-      return {
-        success: true,
-        user: mappedUser
-      };
-    } catch (err: any) {
-      console.error(err);
-
-      return (
-        loginLocal() || {
-          success: false,
-          message:
-            err.message ||
-            'Koneksi gagal'
-        }
-      );
-    }
+    return {
+      success: true,
+      user: mappedUser
+    };
   }
 
   /* ================================
      GET COURSES
   ================================ */
 
-  static async getCourses(): Promise<Course[]> {
-    if (!this.isLiveMode()) {
-      return localDb.getCourses();
-    }
+  static async getCourses():
+    Promise<Course[]> {
 
-    try {
-      const data = await requestGAS(
-        this.getGasUrl(),
-        'getCourses',
-        'GET'
-      );
+    const data = await requestGAS(
+      this.getGasUrl(),
+      'getCourses',
+      'GET'
+    );
 
-      const courses: Course[] = (data || []).map(
-        (c: any) => ({
-          kodeMK: String(
-            getPropCaseInsensitive(c, [
-              'kodeMK',
-              'Kode MK'
-            ]) || ''
-          ),
-          namaMK: String(
-            getPropCaseInsensitive(c, [
-              'namaMK',
-              'Nama MK'
-            ]) || ''
-          ),
-          hari: String(
-            getPropCaseInsensitive(c, [
-              'hari',
-              'Hari'
-            ]) || ''
-          ),
-          jamMulai: String(
-            getPropCaseInsensitive(c, [
-              'jamMulai',
-              'Jam Mulai'
-            ]) || ''
-          ),
-          jamSelesai: String(
-            getPropCaseInsensitive(c, [
-              'jamSelesai',
-              'Jam Selesai'
-            ]) || ''
-          ),
-          ruang: String(
-            getPropCaseInsensitive(c, [
-              'ruang',
-              'Ruang'
-            ]) || ''
-          ),
-          dosenId: String(
-            getPropCaseInsensitive(c, [
+    return (data || []).map(
+      (c: any) => ({
+        kodeMK: String(
+          getPropCaseInsensitive(
+            c,
+            ['kodeMK', 'Kode MK']
+          ) || ''
+        ),
+
+        namaMK: String(
+          getPropCaseInsensitive(
+            c,
+            ['namaMK', 'Nama MK']
+          ) || ''
+        ),
+
+        hari: String(
+          getPropCaseInsensitive(
+            c,
+            ['hari', 'Hari']
+          ) || ''
+        ),
+
+        jamMulai: String(
+          getPropCaseInsensitive(
+            c,
+            ['jamMulai', 'Jam Mulai']
+          ) || ''
+        ),
+
+        jamSelesai: String(
+          getPropCaseInsensitive(
+            c,
+            ['jamSelesai', 'Jam Selesai']
+          ) || ''
+        ),
+
+        ruang: String(
+          getPropCaseInsensitive(
+            c,
+            ['ruang', 'Ruang']
+          ) || ''
+        ),
+
+        dosenId: String(
+          getPropCaseInsensitive(
+            c,
+            [
               'dosenId',
               'Dosen Pengampu'
-            ]) || ''
-          ),
-          semester: String(
-            getPropCaseInsensitive(c, [
-              'semester',
-              'Semester'
-            ]) || ''
-          )
-        })
-      );
+            ]
+          ) || ''
+        ),
 
-      localDb.setCourses(courses);
-
-      return courses;
-    } catch (err) {
-      console.error(err);
-      return localDb.getCourses();
-    }
+        semester: String(
+          getPropCaseInsensitive(
+            c,
+            ['semester', 'Semester']
+          ) || ''
+        )
+      })
+    );
   }
 
   /* ================================
@@ -511,77 +455,36 @@ export class ApiClient {
   static async createCourse(
     course: Course
   ): Promise<void> {
-    const courses = localDb.getCourses();
 
-    const exists = courses.some(
-      c => c.kodeMK === course.kodeMK
+    await requestGAS(
+      this.getGasUrl(),
+      'createCourse',
+      'POST',
+      {
+        course
+      }
     );
-
-    if (!exists) {
-      courses.push(course);
-      localDb.setCourses(courses);
-    }
-
-    if (!this.isLiveMode()) return;
-
-    try {
-      await requestGAS(
-        this.getGasUrl(),
-        'createCourse',
-        'POST',
-        {
-          course
-        }
-      );
-    } catch (err) {
-      console.error(err);
-    }
   }
 
   /* ================================
      RECORD ATTENDANCE
   ================================ */
 
-  static async recordAttendance(params: {
-    idSesi: string;
-    idMahasiswa: string;
-    statusKehadiran: AttendanceStatus;
-    kodeMasukkan?: string;
-    ipAddressMetode: string;
-  }): Promise<void> {
-    const sessions = localDb.getSessions();
-
-    const session = sessions.find(
-      s => s.idSesi === params.idSesi
-    );
-
-    if (!session) {
-      throw new Error(
-        'Sesi tidak ditemukan'
-      );
+  static async recordAttendance(
+    params: {
+      idSesi: string;
+      idMahasiswa: string;
+      statusKehadiran:
+        AttendanceStatus;
+      kodeMasukkan?: string;
+      ipAddressMetode: string;
     }
-
-    if (session.status === 'DITUTUP') {
-      throw new Error(
-        'Sesi sudah ditutup'
-      );
-    }
-
-    if (
-      session.kodeUnik &&
-      session.kodeUnik !== params.kodeMasukkan
-    ) {
-      throw new Error(
-        'Kode unik salah'
-      );
-    }
-
-    const attendances =
-      localDb.getAttendances();
+  ): Promise<void> {
 
     const attendance: Attendance = {
       idSesi: params.idSesi,
-      idMahasiswa: params.idMahasiswa,
+      idMahasiswa:
+        params.idMahasiswa,
       statusKehadiran:
         params.statusKehadiran,
       waktuPresensi:
@@ -590,36 +493,14 @@ export class ApiClient {
         params.ipAddressMetode
     };
 
-    const index = attendances.findIndex(
-      a =>
-        a.idSesi === params.idSesi &&
-        a.idMahasiswa ===
-          params.idMahasiswa
+    await requestGAS(
+      this.getGasUrl(),
+      'recordAttendance',
+      'POST',
+      {
+        attendance
+      }
     );
-
-    if (index >= 0) {
-      attendances[index] = attendance;
-    } else {
-      attendances.push(attendance);
-    }
-
-    localDb.setAttendances(
-      attendances
-    );
-
-    if (!this.isLiveMode()) return;
-
-    try {
-      await requestGAS(
-        this.getGasUrl(),
-        'recordAttendance',
-        'POST',
-        {
-          attendance
-        }
-      );
-    } catch (err) {
-      console.error(err);
-    }
   }
 }
+```
