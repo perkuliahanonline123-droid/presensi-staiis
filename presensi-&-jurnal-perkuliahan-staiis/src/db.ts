@@ -124,7 +124,7 @@ async function requestGAS(url: string, action: string, method: 'GET' | 'POST', b
     }
 
     const data = await response.json();
-    return data; // Kembalikan objek data murni secara utuh agar status .success luar bisa divalidasi
+    return data;
   } catch (err: any) {
     console.error("GAS Request Error:", err);
     return { success: false, error: err.message || "Koneksi terputus" };
@@ -147,7 +147,7 @@ export class ApiClient {
   static isLiveMode(): boolean { return true; }
 
   /* ================================
-     LOGIN (FIXED & SECURE VERSION)
+     LOGIN
   ================================ */
   static async login(email: string, password: string): Promise<{ success: boolean; user?: User; message?: string }> {
     try {
@@ -158,17 +158,14 @@ export class ApiClient {
         { email: email, password: password }
       );
 
-      // Proteksi 1: Jika server tidak mengembalikan payload apa pun
       if (!responseBody) {
         return { success: false, message: 'Tidak ada respons balasan dari server database.' };
       }
 
-      // Proteksi 2: Tangkap error dari backend Apps Script secara aman
       if (responseBody.success === false) {
         return { success: false, message: responseBody.error || 'Email atau password Anda salah!' };
       }
 
-      // Ambil objek user dari struktur berlapis (.data) atau root
       const resData = responseBody.data || responseBody;
       
       if (!resData || (resData.success === false)) {
@@ -177,7 +174,6 @@ export class ApiClient {
 
       const u = resData.user || resData;
 
-      // Ambil ID secara aman, jika tidak ada, gagalkan login secara halus daripada memicu crash
       const checkId = getPropCaseInsensitive(u, ['id', 'ID']);
       if (!checkId) {
         return { success: false, message: 'Akun Anda belum terdaftar di sistem SIAKAD.' };
@@ -232,7 +228,6 @@ export class ApiClient {
     }
   }
 
-  // Fungsi berikut disesuaikan agar tidak crash saat membaca data kosong
   static async getSessions(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getSessions', 'GET'); return r.success ? r.data : []; } catch { return []; } }
   static async getAttendances(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getAttendances', 'GET'); return r.success ? r.data : []; } catch { return []; } }
   static async getJournals(): Promise<any[]> { try { const r = await requestGAS(this.getGasUrl(), 'getJournals', 'GET'); return r.success ? r.data : []; } catch { return []; } }
@@ -259,5 +254,23 @@ export class ApiClient {
     };
 
     await requestGAS(this.getGasUrl(), 'recordAttendance', 'POST', { attendance: attendance });
+  }
+
+  /* ================================
+     SAVE JOURNAL (FUNGSI PERBAIKAN UTAMA)
+  ================================ */
+  static async saveJournal(journal: Journal): Promise<any> {
+    try {
+      const response = await requestGAS(
+        this.getGasUrl(), 
+        'saveJournal', 
+        'POST', 
+        { journal: journal }
+      );
+      return response;
+    } catch (err: any) {
+      console.error("Gagal menyimpan jurnal perkuliahan:", err);
+      return { success: false, error: err.message || "Gagal menyimpan jurnal ke database." };
+    }
   }
 }
