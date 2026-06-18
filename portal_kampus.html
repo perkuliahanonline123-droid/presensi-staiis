@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Kampus</title>
+    <!-- Menggunakan Tailwind CSS untuk styling responsif & modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white h-screen w-screen overflow-hidden m-0 p-0 relative">
+
+    <!-- Loading Indicator (Ditampilkan sebelum iframe selesai dimuat) -->
+    <div id="loading" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-0">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-3"></div>
+        <p class="text-gray-500 text-sm animate-pulse">Memuat sistem...</p>
+    </div>
+
+    <!-- Iframe Google Apps Script (Tampil penuh satu layar) -->
+    <iframe
+        onload="document.getElementById('loading').style.display='none'"
+        src="https://script.google.com/macros/s/AKfycbxMLp-QW7jpO1XFe-JHPGJIjlzLTUTmtheMWt8wz7bwtWheB-LiaaVvDCNngq1rsuAd/exec"
+        class="absolute inset-0 w-full h-full border-0 z-10"
+        title="Aplikasi Kampus"
+        allowfullscreen>
+    </iframe>
+
+</body>
+</html>
