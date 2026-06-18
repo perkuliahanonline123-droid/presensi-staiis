@@ -2,20 +2,37 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Informasi Kampus</title>
-    <!-- Menggunakan Tailwind CSS untuk styling responsif & modern -->
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-white h-screen w-screen overflow-hidden m-0 p-0 relative">
+    <!-- Pengaturan viewport agar pas di HP dan tidak bisa di-zoom (seperti aplikasi asli) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Meta tag untuk tampilan Home Screen (PWA ringan) -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
 
-    <!-- Loading Indicator (Ditampilkan sebelum iframe selesai dimuat) -->
+    <title>Sistem Informasi Kampus</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Mencegah browser HP melakukan efek 'karet' atau pull-to-refresh di luar iframe */
+        body {
+            overscroll-behavior-y: none;
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+</head>
+<body class="bg-white h-[100dvh] w-full overflow-hidden m-0 p-0 relative">
+
+    <!-- Loading Indicator -->
     <div id="loading" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-0">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-3"></div>
         <p class="text-gray-500 text-sm animate-pulse">Memuat sistem...</p>
     </div>
 
-    <!-- Iframe Google Apps Script (Tampil penuh satu layar) -->
+    <!-- Iframe Google Apps Script -->
     <iframe
         onload="document.getElementById('loading').style.display='none'"
         src="https://script.google.com/macros/s/AKfycbxMLp-QW7jpO1XFe-JHPGJIjlzLTUTmtheMWt8wz7bwtWheB-LiaaVvDCNngq1rsuAd/exec"
