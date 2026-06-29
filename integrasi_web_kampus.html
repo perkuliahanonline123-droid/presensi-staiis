@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Kampus</title>
+    <!-- Menggunakan Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Memastikan halaman mengambil tinggi penuh tanpa scrollbar ganda */
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden; 
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col h-screen relative">
+
+    <!-- Animasi Loading -->
+    <div id="loader" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-50 transition-opacity duration-500">
+        <!-- Spinner -->
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 border-solid"></div>
+        <p class="mt-4 text-gray-600 font-semibold font-sans animate-pulse">Memuat sistem, mohon tunggu...</p>
+    </div>
+
+    <!-- Iframe untuk menampilkan Google Apps Script -->
+    <!-- atribut onload digunakan untuk menyembunyikan loader saat web app selesai dimuat -->
+    <iframe 
+        id="app-frame"
+        src="https://script.google.com/macros/s/AKfycbwfrEI7leOKPiz3HTJcKtUr40LhpXv6xJmgRijj7yiCy2GQgKANSuVlst_ayn8yRiRaJg/exec" 
+        class="w-full h-full border-none"
+        title="Sistem Web Kampus"
+        onload="sembunyikanLoader()"
+        allowfullscreen>
+    </iframe>
+
+    <script>
+        // Fungsi untuk menghilangkan animasi loading dengan efek transisi yang halus
+        function sembunyikanLoader() {
+            const loader = document.getElementById('loader');
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500); // Menunggu transisi selesai sebelum menghapus dari tampilan
+        }
+    </script>
+
+</body>
+</html>
